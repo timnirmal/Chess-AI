@@ -215,13 +215,13 @@ function removeGreySquares () {
 }
 
 function greySquare (square) {
-    var squareHi = $('#board .square-' + square);
+    var squareHiglight = $('#board .square-' + square);
 
     var background = '#a9a9a9';
-    if (squareHi.hasClass('black-3c85d') === true) {
+    if (squareHiglight.hasClass('black-3c85d') === true) {
         background = '#696969';
     }
-    squareHi.css('background', background);
+    squareHiglight.css('background', background);
 }
 
 // Game State
