@@ -91,18 +91,12 @@ var kingBlack = reverseArray(kingWhite);
 
 function calcValue (piece, isWhite, x,y) {
     switch (piece.type) {
-        case 'p':
-            return 10 + (isWhite ? pawnWhite[y][x] : pawnBlack[y][x]);
-        case 'r':
-            return 50 + (isWhite ? rookWhite[y][x] : rookBlack[y][x]);
-        case 'n':
-            return 30 + knight[y][x];
-        case 'b':
-            return 30 + (isWhite ? bishopWhite[y][x] : bishopBlack[y][x]);
-        case 'q':
-            return 90 + Queen[y][x];
-        case 'k':
-            return 900 + (isWhite ? kingWhite[y][x] : kingBlack[y][x]);
+        case 'p': return 10 + (isWhite ? pawnWhite[y][x] : pawnBlack[y][x]);
+        case 'r': return 50 + (isWhite ? rookWhite[y][x] : rookBlack[y][x]);
+        case 'n': return 30 + knight[y][x];
+        case 'b': return 30 + (isWhite ? bishopWhite[y][x] : bishopBlack[y][x]);
+        case 'q': return 90 + Queen[y][x];
+        case 'k': return 900 + (isWhite ? kingWhite[y][x] : kingBlack[y][x]);
     }
 }
 
@@ -113,7 +107,7 @@ function getPieceValue (piece, x, y) {
     return piece.color === 'w' ? absoluteValue : -absoluteValue;
 }
 
-var evaluateBoard = function (board) {
+function evaluateBoard (board) {
     var totalEvaluation = 0;
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
@@ -121,10 +115,9 @@ var evaluateBoard = function (board) {
         }
     }
     return totalEvaluation;
-};
+}
 
-
-function minimax (position, depth, alpha, beta,maximizingPlayer) {
+function minimax (game, depth, alpha, beta, maximizingPlayer) {
     countPosition++;
     if (depth === 0) {
         // return static evaluation of position
@@ -141,6 +134,10 @@ function minimax (position, depth, alpha, beta,maximizingPlayer) {
             eval = minimax(game, depth - 1, alpha, beta,!maximizingPlayer);
             maxEval = Math.max(maxEval, eval);
             game.undo();
+            alpha = Math.max(alpha, maxEval);
+            if (beta <= alpha) {
+                return maxEval;
+            }
         }
         return maxEval;
     }
@@ -149,8 +146,12 @@ function minimax (position, depth, alpha, beta,maximizingPlayer) {
         for (var i = 0; i < newGameMoves.length; i++) {
             game.ugly_move(newGameMoves[i]);
             eval = minimax(game, depth - 1,alpha, beta, !maximizingPlayer);
-            minEval = Math.max(minEval, eval);
+            minEval = Math.min(minEval, eval);
             game.undo();
+            beta = Math.min(beta, minEval);
+            if (beta <= alpha) {
+                return minEval;
+            }
         }
         return minEval;
     }
@@ -166,7 +167,6 @@ function minimaxRoot(game, depth, maximumPlayer) {
         game.ugly_move(newGameMove);
         var eval = minimax(game, depth - 1, -10000, 10000, !maximumPlayer);
         game.undo();
-
         if(eval >= bestMove) {
             bestMove = eval;
             bestMoveFound = newGameMove;
@@ -190,7 +190,6 @@ function getBestMove(game) {
 // Make Best Move
 function makeBestMove () {
     var bestMove = getBestMove(game);
-    console.log(bestMove)
     game.ugly_move(bestMove);
     board.position(game.fen());
     if (game.game_over()) alert('Game over');
@@ -231,6 +230,8 @@ function updateStatus () {
     if (game.turn() === 'b') {
         moveColor = 'Black'
     }
+
+    console.log(moveColor);
 
     // checkmate?
     if (game.in_checkmate()) {
@@ -336,13 +337,13 @@ function minimax (position, depth, maximizingPlayer) {
     if depth == 0 or game over in position
         return static evaluation of position
     if maximizingPlayer
-        maxEval = -9999
+        maxEval = -infinity
         for each child of position
             eval = minimax(child, depth-1, false)
             maxEval = max(maxEval, eval)
         return maxEval
     else
-        minEval = +9999
+        minEval = +infinity
         for each child of position
             eval = minimax(child, depth-1, true)
             minEval = min(minEval, eval)
@@ -357,7 +358,7 @@ function minimax (position, depth, alpha, beta, maximizingPlayer) {
         return static evaluation of position
 
     if maximizingPlayer
-            maxEval = -9999
+            maxEval = -infinity
         for each child of position
             eval = minimax(child, depth-1, alpha, beta, false)
             maxEval = max(maxEval, eval)
@@ -366,7 +367,7 @@ function minimax (position, depth, alpha, beta, maximizingPlayer) {
                 break
         return maxEval
     else
-        minEval = +9999
+        minEval = +infinity
         for each child of position
             eval = minimax(child, depth-1, alpha, beta, true)
             minEval = min(minEval, eval)
