@@ -7,6 +7,8 @@ var $status = $('#status')
 var $fen = $('#fen')
 var $pgn = $('#pgn')
 
+var countPosition;
+
 var pawnWhite = [
         [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
         [5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0],
@@ -18,7 +20,7 @@ var pawnWhite = [
         [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0]
     ];
 
-var knightEval = [
+var knight = [
         [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0],
         [-4.0, -2.0,  0.0,  0.0,  0.0,  0.0, -2.0, -4.0],
         [-3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.0, -3.0],
@@ -29,7 +31,7 @@ var knightEval = [
         [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0]
     ];
 
-var bishopEvalWhite = [
+var bishopWhite = [
     [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0],
     [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
     [ -1.0,  0.0,  0.5,  1.0,  1.0,  0.5,  0.0, -1.0],
@@ -40,7 +42,7 @@ var bishopEvalWhite = [
     [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0]
 ];
 
-var rookEvalWhite = [
+var rookWhite = [
     [  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
     [  0.5,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  0.5],
     [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
@@ -51,7 +53,7 @@ var rookEvalWhite = [
     [  0.0,   0.0, 0.0,  0.5,  0.5,  0.0,  0.0,  0.0]
 ];
 
-var evalQueen = [
+var Queen = [
     [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0],
     [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
     [ -1.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
@@ -62,7 +64,7 @@ var evalQueen = [
     [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0]
 ];
 
-var kingEvalWhite = [
+var kingWhite = [
 
     [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
     [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
@@ -79,33 +81,132 @@ var reverseArray = function(array) {
     return array.slice().reverse();
 };
 
-var pawnEvalBlack = reverseArray(pawnWhite);
+var pawnBlack = reverseArray(pawnWhite);
 
-var bishopEvalBlack = reverseArray(bishopEvalWhite);
+var bishopBlack = reverseArray(bishopWhite);
 
-var rookEvalBlack = reverseArray(rookEvalWhite);
+var rookBlack = reverseArray(rookWhite);
 
-var kingEvalBlack = reverseArray(kingEvalWhite);
+var kingBlack = reverseArray(kingWhite);
 
 
-function minimax (position, depth, maximizingPlayer) {
-    if (depth === 0) {
-        return
+// Evaluation
+function calcValue (piece, isWhite, x,y) {
+    switch (piece.type) {
+        case 'p': return 10 + (isWhite ? pawnWhite[y][x] : pawnBlack[y][x]);
+        case 'r': return 50 + (isWhite ? rookWhite[y][x] : rookBlack[y][x]);
+        case 'n': return 30 + knight[y][x];
+        case 'b': return 30 + (isWhite ? bishopWhite[y][x] : bishopBlack[y][x]);
+        case 'q': return 90 + Queen[y][x];
+        case 'k': return 900 + (isWhite ? kingWhite[y][x] : kingBlack[y][x]);
     }
-    /*
-    return static evaluation of position
-    if maximizingPlayer
-        maxEval = -infinity
-    for each child of position
-    eval = minimax(child, depth-1, false)
-    maxEval = max(maxEval, eval)
-    return maxEval
-else
-    minEval = +infinity
-    for each child of position
-    eval = minimax(child, depth-1, true)
-    minEval = min(minEval, eval)
-    return minEval*/
+}
+
+function getPieceValue (piece, x, y) {
+    if (piece === null) return 0;
+
+    var absoluteValue = calcValue(piece, piece.color === 'w', x ,y);
+    return piece.color === 'w' ? absoluteValue : -absoluteValue;
+}
+
+function evaluateBoard (board) {
+    var totalEvaluation = 0;
+    for (var i = 0; i < 8; i++) {
+        for (var j = 0; j < 8; j++) {
+            totalEvaluation = totalEvaluation + getPieceValue(board[i][j], i ,j);
+        }
+    }
+    return totalEvaluation;
+}
+
+function minimax (game, depth, alpha, beta, maximizingPlayer) {
+    countPosition++;
+    if (depth === 0) {
+        // return static evaluation of position
+        return -evaluateBoard(game.board());
+    }
+
+    var newGameMoves = game.ugly_moves();
+    var eval;
+
+    if (maximizingPlayer) {
+        var maxEval = -9999;
+        for (var i = 0; i < newGameMoves.length; i++) {
+            game.ugly_move(newGameMoves[i]);
+            eval = minimax(game, depth - 1, alpha, beta,!maximizingPlayer);
+            maxEval = Math.max(maxEval, eval);
+            game.undo();
+            alpha = Math.max(alpha, maxEval);
+            if (beta <= alpha) {
+                return maxEval;
+            }
+        }
+        return maxEval;
+    }
+    else {
+        var minEval = 9999;
+        for (var i = 0; i < newGameMoves.length; i++) {
+            game.ugly_move(newGameMoves[i]);
+            eval = minimax(game, depth - 1,alpha, beta, !maximizingPlayer);
+            minEval = Math.min(minEval, eval);
+            game.undo();
+            beta = Math.min(beta, minEval);
+            if (beta <= alpha) {
+                return minEval;
+            }
+        }
+        return minEval;
+    }
+}
+
+function minimaxRoot(game, depth, maximumPlayer) {
+    var newGameMoves = game.ugly_moves();
+    var bestMove = -9999;
+    var bestMoveFound;
+
+    for(var i = 0; i < newGameMoves.length; i++) {
+        var newGameMove = newGameMoves[i]
+        game.ugly_move(newGameMove);
+        var eval = minimax(game, depth - 1, -10000, 10000, !maximumPlayer);
+        game.undo();
+        if(eval >= bestMove) {
+            bestMove = eval;
+            bestMoveFound = newGameMove;
+        }
+    }
+    return bestMoveFound;
+}
+
+function getBestMove(game) {
+    if (game.game_over()) alert('Game over');
+
+    countPosition = 0;
+    // Select from the Dropdown Menu
+    var depth = 3;
+
+    var bestMove = minimaxRoot(game, depth, true);
+    return bestMove;
+
+}
+
+// Make Best Move
+function makeBestMove () {
+    var bestMove = getBestMove(game);
+    game.ugly_move(bestMove);
+    board.position(game.fen());
+    if (game.game_over()) alert('Game over');
+}
+
+// Random Moves
+function makeRandomMove () {
+    var possibleMoves = game.moves()
+
+    // game over
+    if (possibleMoves.length === 0) return
+
+    var randomIdx = Math.floor(Math.random() * possibleMoves.length)
+    game.move(possibleMoves[randomIdx])
+    board.position(game.fen())
 }
 
 // Highlight Legal Moves
@@ -123,18 +224,6 @@ function greySquare (square) {
     squareHi.css('background', background);
 }
 
-// Random Moves
-function makeRandomMove () {
-    var possibleMoves = game.moves()
-
-    // game over
-    if (possibleMoves.length === 0) return
-
-    var randomIdx = Math.floor(Math.random() * possibleMoves.length)
-    game.move(possibleMoves[randomIdx])
-    board.position(game.fen())
-}
-
 // Game State
 function updateStatus () {
     var status = ''
@@ -143,6 +232,8 @@ function updateStatus () {
     if (game.turn() === 'b') {
         moveColor = 'Black'
     }
+
+    console.log(moveColor);
 
     // checkmate?
     if (game.in_checkmate()) {
@@ -185,7 +276,6 @@ function onMouseoverSquare (square, piece) {
 
     // highlight the possible squares for this piece
     for (var i = 0; i < moves.length; i++) {
-        console.log(moves[i].to);
         greySquare(moves[i].to)
     }
 }
@@ -219,7 +309,8 @@ function onDrop (source, target) {
     if (move === null) return 'snapback'
 
     // make random legal move for black
-    window.setTimeout(makeRandomMove, 250)
+    //window.setTimeout(makeRandomMove, 250)
+    window.setTimeout(makeBestMove, 250)
 
     updateStatus()
 }
