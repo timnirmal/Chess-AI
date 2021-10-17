@@ -34,6 +34,10 @@ function makeRandomMove () {
     var randomIdx = Math.floor(Math.random() * possibleMoves.length)
     game.move(possibleMoves[randomIdx])
     board.position(game.fen())
+
+    // This will make a loop
+    // 250 (timeout) can be changed for faster game
+    window.setTimeout(makeRandomMove, 250)
 }
 
 function onDrop (source, target) {
@@ -48,6 +52,7 @@ function onDrop (source, target) {
     if (move === null) return 'snapback'
 
     // make random legal move for black
+    // Keeping this will let you pick the fist move if you need all random remove below line
     window.setTimeout(makeRandomMove, 250)
 
     updateStatus()
