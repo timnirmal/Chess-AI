@@ -8,7 +8,6 @@ var $fen = $('#fen')
 var $pgn = $('#pgn')
 
 
-
 // Highlight Legal Moves
 function removeGreySquares () {
     $('#board .square-55d63').css('background', '');
