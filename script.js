@@ -8,6 +8,7 @@ var $fen = $('#fen')
 var $pgn = $('#pgn')
 
 
+
 // Highlight Legal Moves
 function removeGreySquares () {
     $('#board .square-55d63').css('background', '');
@@ -70,7 +71,6 @@ function updateStatus () {
 }
 
 ///// Chessboardjs Functions
-
 function onMouseoverSquare (square, piece) {
     // get list of possible moves for this square
     var moves = game.moves({
