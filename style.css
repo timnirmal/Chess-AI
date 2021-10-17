@@ -3,8 +3,17 @@
     margin: auto
 }
 
-.status-id {
+.buttons {
     width: 400px;
-    left: 100px;
+    margin: auto;
 }
 
+#status,#pgn,#fen {
+    width: 400px;
+    margin: auto
+}
+
+#l1,#l2,#l3 {
+    width: 400px;
+    margin: auto
+}
