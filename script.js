@@ -1,6 +1,11 @@
 var board = null
 var game = new Chess()
 
+var $status = $('#status')
+var $fen = $('#fen')
+var $pgn = $('#pgn')
+
+
 var onMouseoverSquare = function(square, piece) {
 
 };
@@ -31,12 +36,47 @@ function onDrop (source, target) {
     // illegal move
     if (move === null) return 'snapback'
 
+    updateStatus()
 }
 
 // update the board position after the piece snap for castling, en passant, pawn promotion
 function onSnapEnd () {
     board.position(game.fen())
 }
+
+function updateStatus () {
+    var status = ''
+
+    var moveColor = 'White'
+    if (game.turn() === 'b') {
+        moveColor = 'Black'
+    }
+
+    // checkmate?
+    if (game.in_checkmate()) {
+        status = 'Game over, ' + moveColor + ' is in checkmate.'
+    }
+
+    // draw?
+    else if (game.in_draw()) {
+        status = 'Game over, drawn position'
+    }
+
+    // game still on
+    else {
+        status = moveColor + ' to move'
+
+        // check?
+        if (game.in_check()) {
+            status += ', ' + moveColor + ' is in check'
+        }
+    }
+
+    $status.html(status)
+    $fen.html(game.fen())
+    $pgn.html(game.pgn())
+}
+
 
 var config = {
     draggable: true,
@@ -47,3 +87,5 @@ var config = {
 };
 
 board = ChessBoard('board', config);
+
+updateStatus()
