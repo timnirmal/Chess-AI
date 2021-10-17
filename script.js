@@ -89,6 +89,8 @@ var rookBlack = reverseArray(rookWhite);
 
 var kingBlack = reverseArray(kingWhite);
 
+
+// Evaluation
 function calcValue (piece, isWhite, x,y) {
     switch (piece.type) {
         case 'p': return 10 + (isWhite ? pawnWhite[y][x] : pawnBlack[y][x]);
